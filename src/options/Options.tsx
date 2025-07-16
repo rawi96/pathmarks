@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import '../index.css';
 
+type Env = { label: string; origin: string };
+type Pathmark = { title: string; path: string };
+type Config = { envs?: Env[]; pathmarks: Pathmark[] };
+
 function usePathmarksConfig() {
   const [rawInput, setRawInput] = useState('');
   const [status, setStatus] = useState('');
@@ -9,17 +13,18 @@ function usePathmarksConfig() {
 
   useEffect(() => {
     chrome.storage.local.get('pathmarks', (res) => {
-      const initial = res.pathmarks || [];
+      const initial: Config = res.pathmarks || { pathmarks: [] };
       const formatted = JSON.stringify(initial, null, 2);
       setRawInput(formatted);
-      setIsValid(true);
+      setIsValid(Array.isArray(initial.pathmarks));
     });
   }, []);
 
   const validateJson = (value: string) => {
     try {
-      JSON.parse(value);
-      setIsValid(true);
+      const parsed = JSON.parse(value);
+      const valid = Array.isArray(parsed?.pathmarks);
+      setIsValid(valid);
     } catch {
       setIsValid(false);
     }
@@ -114,16 +119,42 @@ const HelperBox = () => (
   <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded p-4">
     <strong>What is this?</strong>
     <br />
-    This is your <em>Pathmarks</em> configuration. Define shortcuts to useful paths on the current
-    site. Each entry must include a <code>title</code> and a <code>path</code>, for example:
+    This is your <em>Pathmarks</em> configuration. Define shortcuts to useful paths and environments
+    for your project.
+    <br />
+    You can define:
+    <ul className="list-disc ml-5 my-2">
+      <li>
+        <code>pathmarks</code> – an array of objects with <code>title</code> and <code>path</code>
+      </li>
+      <li>
+        <code>envs</code> – optional list of environments with <code>label</code> and{' '}
+        <code>origin</code>
+      </li>
+    </ul>
+    Example:
     <pre className="mt-2 text-[11px] bg-blue-100 p-2 rounded overflow-x-auto">
-      {`[
-  { "title": "Dashboard", "path": "/dashboard" },
-  { "title": "User Management", "path": "/config/users" },
-  { "title": "Admin Panel", "path": "/admin" }
-]`}
+      {`{
+  "envs": [
+    { "label": "Production", "origin": "https://app.smartplatform.io" },
+    { "label": "Staging", "origin": "https://staging.smartplatform.io" },
+    { "label": "Development", "origin": "https://dev.smartplatform.io" },
+    { "label": "Local", "origin": "http://localhost:3000" }
+  ],
+  "pathmarks": [
+    { "title": "Dashboard", "path": "/dashboard" },
+    { "title": "User Management", "path": "/config/users" },
+    { "title": "Admin Panel", "path": "/admin" },
+    { "title": "Audit Logs", "path": "/logs/audit" },
+    { "title": "Feature Flags", "path": "/config/flags" },
+    { "title": "Permission Settings", "path": "/config/permissions" },
+    { "title": "API Explorer", "path": "/docs/api" },
+    { "title": "System Monitor", "path": "/monitoring/system" },
+    { "title": "Error Tracker", "path": "/errors" },
+    { "title": "Support Inbox", "path": "/support/inbox" }
+  ]
+}`}
     </pre>
-    These paths will appear in the extension popup. Changes are saved locally.
   </div>
 );
 
@@ -144,11 +175,17 @@ const Options = () => {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800 p-8 font-sans">
       <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-8 relative">
-        <GitHubLink />
-        <div className="flex items-center gap-3 mb-4">
-          <img src="icons/icon128.png" alt="Pathmarks Logo" className="w-8 h-8 rounded" />
+        <div className="flex items-center mb-4">
+          <div className="rocket-container mr-2">
+            <img
+              src="icons/icon128.png"
+              alt="Pathmarks Logo"
+              className="rocket w-9 h-9 inline-block align-middle"
+            />
+          </div>
           <h1 className="text-2xl font-semibold">Pathmarks Configuration</h1>
         </div>
+        <GitHubLink />
         <HelperBox />
         <div className="relative">
           <ConfigEditor value={rawInput} onChange={updateInput} isValid={isValid} />

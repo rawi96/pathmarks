@@ -1,1 +1,28 @@
 @import 'tailwindcss';
+
+.rocket-container {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    overflow: visible;
+}
+
+.rocket {
+    width: 100%;
+    height: 100%;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.rocket-container:hover .rocket {
+    animation: rocket-launch 0.8s ease-out forwards;
+}
+
+@keyframes rocket-launch {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(100px, -100px);
+    }
+}

@@ -25,11 +25,21 @@ You can define your setup like this in the options page:
 ```json
 {
   "envs": [
-    { "label": "Prod", "origin": "https://example.com" },
-    { "label": "Dev", "origin": "https://dev.example.com" }
+    { "label": "Production", "origin": "https://app.smartplatform.io" },
+    { "label": "Staging", "origin": "https://staging.smartplatform.io" },
+    { "label": "Development", "origin": "https://dev.smartplatform.io" },
+    { "label": "Local", "origin": "http://localhost:3000" }
   ],
   "pathmarks": [
     { "title": "Dashboard", "path": "/dashboard" },
-    { "title": "User Management", "path": "/config/users" }
+    { "title": "User Management", "path": "/config/users" },
+    { "title": "Admin Panel", "path": "/admin" },
+    { "title": "Audit Logs", "path": "/logs/audit" },
+    { "title": "Feature Flags", "path": "/config/flags" },
+    { "title": "Permission Settings", "path": "/config/permissions" },
+    { "title": "API Explorer", "path": "/docs/api" },
+    { "title": "System Monitor", "path": "/monitoring/system" },
+    { "title": "Error Tracker", "path": "/errors" },
+    { "title": "Support Inbox", "path": "/support/inbox" }
   ]
 }

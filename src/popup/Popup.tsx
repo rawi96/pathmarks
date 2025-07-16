@@ -3,14 +3,21 @@ import ReactDOM from 'react-dom/client';
 import '../index.css';
 
 type Pathmark = { title: string; path: string };
+type Env = { label: string; origin: string };
 
 function usePathmarks() {
   const [pathmarks, setPathmarks] = useState<Pathmark[]>([]);
+  const [envs, setEnvs] = useState<Env[]>([]);
   const [baseUrl, setBaseUrl] = useState('');
+  const [currentPath, setCurrentPath] = useState('');
 
   useEffect(() => {
     chrome.storage.local.get('pathmarks', (res) => {
-      setPathmarks(res.pathmarks || []);
+      const stored = res.pathmarks || {};
+      const paths = Array.isArray(stored) ? stored : stored.pathmarks || [];
+      const envList = Array.isArray(stored?.envs) ? stored.envs : [];
+      setPathmarks(paths);
+      setEnvs(envList);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -18,13 +25,27 @@ function usePathmarks() {
       if (tab?.url) {
         try {
           const url = new URL(tab.url);
-          setBaseUrl(`${url.origin}`);
+          setBaseUrl(url.origin);
+          setCurrentPath(url.pathname + url.search + url.hash);
         } catch {
           setBaseUrl('');
         }
       }
     });
   }, []);
+
+  const openSamePathInEnv = (targetOrigin: string) => {
+    const fullUrl = targetOrigin + currentPath;
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const currentTab = tabs[0];
+      if (!currentTab) return;
+      chrome.tabs.create({
+        url: fullUrl,
+        index: currentTab.index + 1,
+        active: true,
+      });
+    });
+  };
 
   const openNextToCurrentTab = (relativePath: string) => {
     const fullUrl = baseUrl + relativePath;
@@ -39,7 +60,7 @@ function usePathmarks() {
     });
   };
 
-  return { pathmarks, openNextToCurrentTab };
+  return { pathmarks, envs, currentPath, openSamePathInEnv, openNextToCurrentTab };
 }
 
 const PathmarkItem = ({
@@ -87,14 +108,43 @@ const PathmarkList = ({
     </ul>
   );
 
+const EnvSelector = ({
+  envs,
+  onSelect,
+  currentPath,
+}: {
+  envs: Env[];
+  onSelect: (origin: string) => void;
+  currentPath: string;
+}) =>
+  envs.length === 0 ? null : (
+    <div className="mb-4">
+      <label className="block text-xs text-gray-500 mb-1">Switch Environment</label>
+      <select
+        defaultValue=""
+        onChange={(e) => e.target.value && onSelect(e.target.value)}
+        className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+      >
+        <option value="" disabled></option>
+        {envs.map((env, idx) => (
+          <option key={idx} value={env.origin}>
+            {env.label} – {env.origin + currentPath}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
 const Popup = () => {
-  const { pathmarks, openNextToCurrentTab } = usePathmarks();
+  const { pathmarks, envs, openSamePathInEnv, openNextToCurrentTab, currentPath } = usePathmarks();
 
   return (
     <div className="w-96 p-4 bg-white text-sm font-sans text-gray-900">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <img src="icons/icon128.png" alt="Pathmarks Logo" className="w-8 h-8 rounded" />{' '}
+          <div className="rocket-container">
+            <img src="icons/icon128.png" alt="Pathmarks Logo" className="rocket rounded" />
+          </div>
           <h1 className="text-lg font-semibold">Pathmarks</h1>
         </div>
         <div className="flex gap-4 items-center text-sm">
@@ -114,6 +164,10 @@ const Popup = () => {
           </button>
         </div>
       </div>
+
+      <EnvSelector envs={envs} onSelect={openSamePathInEnv} currentPath={currentPath} />
+
+      {pathmarks.length > 0 && <div className="block text-xs text-gray-500 mb-1">Switch Path</div>}
 
       <PathmarkList pathmarks={pathmarks} onGo={openNextToCurrentTab} />
     </div>
