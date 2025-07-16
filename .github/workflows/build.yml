@@ -27,7 +27,7 @@ jobs:
       - name: 📦 Zip dist/ folder
         run: |
           cd dist
-          zip -r ../pathmarks.zip .
+          zip -r ../pathmarks.zip * .[^.]* -x '*.DS_Store'
 
       - name: 📤 Upload ZIP artifact
         uses: actions/upload-artifact@v4
