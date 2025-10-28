@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import '../index.css';
 
-type Env = { label: string; origin: string };
 type Pathmark = { title: string; path: string };
-type Config = { envs?: Env[]; pathmarks: Pathmark[] };
+type Config = { pathmarks: Pathmark[] };
 
 function usePathmarksConfig() {
   const [rawInput, setRawInput] = useState('');
@@ -119,28 +118,18 @@ const HelperBox = () => (
   <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded p-4">
     <strong>What is this?</strong>
     <br />
-    This is your <em>Pathmarks</em> configuration. Define shortcuts to useful paths and environments
-    for your project.
+    This is your <em>Pathmarks</em> configuration. Define shortcuts to useful paths for your
+    project.
     <br />
     You can define:
     <ul className="list-disc ml-5 my-2">
       <li>
         <code>pathmarks</code> – an array of objects with <code>title</code> and <code>path</code>
       </li>
-      <li>
-        <code>envs</code> – optional list of environments with <code>label</code> and{' '}
-        <code>origin</code>
-      </li>
     </ul>
     Example:
     <pre className="mt-2 text-[11px] bg-blue-100 p-2 rounded overflow-x-auto">
       {`{
-  "envs": [
-    { "label": "Production", "origin": "https://app.smartplatform.io" },
-    { "label": "Staging", "origin": "https://staging.smartplatform.io" },
-    { "label": "Development", "origin": "https://dev.smartplatform.io" },
-    { "label": "Local", "origin": "http://localhost:3000" }
-  ],
   "pathmarks": [
     { "title": "Dashboard", "path": "/dashboard" },
     { "title": "User Management", "path": "/config/users" },
