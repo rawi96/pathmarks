@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Pathmarks",
   "version": "1.0.0",
-  "description": "Create shortcuts to important paths and switch environments with one click.",
+  "description": "Create shortcuts to important paths and quickly access them with search.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icons/icon128.png"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import '../index.css';
 
@@ -67,19 +67,27 @@ const PathmarkItem = ({
 const PathmarkList = ({
   pathmarks,
   onGo,
+  isFiltered,
 }: {
   pathmarks: Pathmark[];
   onGo: (path: string) => void;
+  isFiltered: boolean;
 }) =>
   pathmarks.length === 0 ? (
     <div className="text-gray-500 text-sm">
-      <p>No pathmarks found.</p>
-      <button
-        onClick={() => chrome.runtime.openOptionsPage()}
-        className="mt-1 text-blue-600 hover:underline"
-      >
-        Add some
-      </button>
+      {isFiltered ? (
+        <p>No pathmarks match your search.</p>
+      ) : (
+        <>
+          <p>No pathmarks found.</p>
+          <button
+            onClick={() => chrome.runtime.openOptionsPage()}
+            className="mt-1 text-blue-600 hover:underline"
+          >
+            Add some
+          </button>
+        </>
+      )}
     </div>
   ) : (
     <ul className="space-y-2">
@@ -111,10 +119,14 @@ const Popup = () => {
   const { pathmarks, openNextToCurrentTab } = usePathmarks();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredPathmarks = pathmarks.filter(
-    (pm) =>
-      pm.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pm.path.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPathmarks = useMemo(
+    () =>
+      pathmarks.filter(
+        (pm) =>
+          pm.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          pm.path.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [pathmarks, searchQuery]
   );
 
   return (
@@ -146,7 +158,11 @@ const Popup = () => {
 
       {pathmarks.length > 0 && <SearchInput value={searchQuery} onChange={setSearchQuery} />}
 
-      <PathmarkList pathmarks={filteredPathmarks} onGo={openNextToCurrentTab} />
+      <PathmarkList
+        pathmarks={filteredPathmarks}
+        onGo={openNextToCurrentTab}
+        isFiltered={searchQuery.length > 0}
+      />
     </div>
   );
 };
