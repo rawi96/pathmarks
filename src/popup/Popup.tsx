@@ -91,8 +91,13 @@ const PathmarkList = ({
     </div>
   ) : (
     <ul className="space-y-2">
-      {pathmarks.map((pm, idx) => (
-        <PathmarkItem key={idx} title={pm.title} path={pm.path} onClick={() => onGo(pm.path)} />
+      {pathmarks.map((pm) => (
+        <PathmarkItem
+          key={`${pm.title}-${pm.path}`}
+          title={pm.title}
+          path={pm.path}
+          onClick={() => onGo(pm.path)}
+        />
       ))}
     </ul>
   );
