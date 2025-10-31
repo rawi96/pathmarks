@@ -102,15 +102,10 @@ const PathmarkList = ({
     </ul>
   );
 
-const SearchInput = ({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) => (
+const SearchInput = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
   <div className="mb-4">
     <input
+      autoFocus
       type="text"
       placeholder="Search pathmarks..."
       value={value}
@@ -129,9 +124,9 @@ const Popup = () => {
       pathmarks.filter(
         (pm) =>
           pm.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          pm.path.toLowerCase().includes(searchQuery.toLowerCase())
+          pm.path.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [pathmarks, searchQuery]
+    [pathmarks, searchQuery],
   );
 
   return (
