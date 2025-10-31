@@ -1,23 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import '../index.css';
 
 type Pathmark = { title: string; path: string };
-type Env = { label: string; origin: string };
 
 function usePathmarks() {
   const [pathmarks, setPathmarks] = useState<Pathmark[]>([]);
-  const [envs, setEnvs] = useState<Env[]>([]);
   const [baseUrl, setBaseUrl] = useState('');
-  const [currentPath, setCurrentPath] = useState('');
 
   useEffect(() => {
     chrome.storage.local.get('pathmarks', (res) => {
       const stored = res.pathmarks || {};
       const paths = Array.isArray(stored) ? stored : stored.pathmarks || [];
-      const envList = Array.isArray(stored?.envs) ? stored.envs : [];
       setPathmarks(paths);
-      setEnvs(envList);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -26,26 +21,12 @@ function usePathmarks() {
         try {
           const url = new URL(tab.url);
           setBaseUrl(url.origin);
-          setCurrentPath(url.pathname + url.search + url.hash);
         } catch {
           setBaseUrl('');
         }
       }
     });
   }, []);
-
-  const openSamePathInEnv = (targetOrigin: string) => {
-    const fullUrl = targetOrigin + currentPath;
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const currentTab = tabs[0];
-      if (!currentTab) return;
-      chrome.tabs.create({
-        url: fullUrl,
-        index: currentTab.index + 1,
-        active: true,
-      });
-    });
-  };
 
   const openNextToCurrentTab = (relativePath: string) => {
     const fullUrl = baseUrl + relativePath;
@@ -60,7 +41,7 @@ function usePathmarks() {
     });
   };
 
-  return { pathmarks, envs, currentPath, openSamePathInEnv, openNextToCurrentTab };
+  return { pathmarks, openNextToCurrentTab };
 }
 
 const PathmarkItem = ({
@@ -86,57 +67,72 @@ const PathmarkItem = ({
 const PathmarkList = ({
   pathmarks,
   onGo,
+  isFiltered,
 }: {
   pathmarks: Pathmark[];
   onGo: (path: string) => void;
+  isFiltered: boolean;
 }) =>
   pathmarks.length === 0 ? (
     <div className="text-gray-500 text-sm">
-      <p>No pathmarks found.</p>
-      <button
-        onClick={() => chrome.runtime.openOptionsPage()}
-        className="mt-1 text-blue-600 hover:underline"
-      >
-        Add some
-      </button>
+      {isFiltered ? (
+        <p>No pathmarks match your search.</p>
+      ) : (
+        <>
+          <p>No pathmarks found.</p>
+          <button
+            onClick={() => chrome.runtime.openOptionsPage()}
+            className="mt-1 text-blue-600 hover:underline"
+          >
+            Add some
+          </button>
+        </>
+      )}
     </div>
   ) : (
     <ul className="space-y-2">
-      {pathmarks.map((pm, idx) => (
-        <PathmarkItem key={idx} title={pm.title} path={pm.path} onClick={() => onGo(pm.path)} />
+      {pathmarks.map((pm) => (
+        <PathmarkItem
+          key={`${pm.title}-${pm.path}`}
+          title={pm.title}
+          path={pm.path}
+          onClick={() => onGo(pm.path)}
+        />
       ))}
     </ul>
   );
 
-const EnvSelector = ({
-  envs,
-  onSelect,
-  currentPath,
+const SearchInput = ({
+  value,
+  onChange,
 }: {
-  envs: Env[];
-  onSelect: (origin: string) => void;
-  currentPath: string;
-}) =>
-  envs.length === 0 ? null : (
-    <div className="mb-4">
-      <label className="block text-xs text-gray-500 mb-1">Switch Environment</label>
-      <select
-        defaultValue=""
-        onChange={(e) => e.target.value && onSelect(e.target.value)}
-        className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-      >
-        <option value="" disabled></option>
-        {envs.map((env, idx) => (
-          <option key={idx} value={env.origin}>
-            {env.label} – {env.origin + currentPath}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+  value: string;
+  onChange: (value: string) => void;
+}) => (
+  <div className="mb-4">
+    <input
+      type="text"
+      placeholder="Search pathmarks..."
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+);
 
 const Popup = () => {
-  const { pathmarks, envs, openSamePathInEnv, openNextToCurrentTab, currentPath } = usePathmarks();
+  const { pathmarks, openNextToCurrentTab } = usePathmarks();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredPathmarks = useMemo(
+    () =>
+      pathmarks.filter(
+        (pm) =>
+          pm.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          pm.path.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [pathmarks, searchQuery]
+  );
 
   return (
     <div className="w-96 p-4 bg-white text-sm font-sans text-gray-900">
@@ -165,11 +161,13 @@ const Popup = () => {
         </div>
       </div>
 
-      <EnvSelector envs={envs} onSelect={openSamePathInEnv} currentPath={currentPath} />
+      {pathmarks.length > 0 && <SearchInput value={searchQuery} onChange={setSearchQuery} />}
 
-      {pathmarks.length > 0 && <div className="block text-xs text-gray-500 mb-1">Switch Path</div>}
-
-      <PathmarkList pathmarks={pathmarks} onGo={openNextToCurrentTab} />
+      <PathmarkList
+        pathmarks={filteredPathmarks}
+        onGo={openNextToCurrentTab}
+        isFiltered={searchQuery.length > 0}
+      />
     </div>
   );
 };
